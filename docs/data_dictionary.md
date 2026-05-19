@@ -1,7 +1,7 @@
 # Data Dictionary — NHS A&E Performance Analysis
 
 ## Source Dataset
-**Name:** Monthly A&E Attendances and Emergency Admissions  
+**Name:** Monthly A&E ( Accident and Emergency. The hospital department where people go for urgent medical treatment. Also called an Emergency Department (ED)) Admissions  
 **Publisher:** NHS England  
 **Licence:** Open Government Licence v3.0  
 **Validated against:** NHS England published national totals (Q1 2024-25 = 4,250,407 Type 1 attendances confirmed)
@@ -51,10 +51,14 @@ Calculated as: (type1_attendances - type1_over_4hr) / type1_attendances × 100
 This is calculated from raw counts rather than the pre-supplied percentage 
 to ensure consistency across quarterly and monthly data sources.
 
-**Decision To Admit (DTA) Waits**  
+**Decision To Admit (DTA ) Waits** 
+
+#### WHat is Decision To Admit (DTA)?
+Decision To Admit. The moment a doctor decides a patient needs a hospital bed. The 12-hour DTA wait measures how long patients are stuck in A&E after that decision because no bed is available.
+
 Once a clinician decides a patient needs admission, the clock starts. 
 The 12-hour DTA wait (dta_12hr_plus) measures patients still in A&E 
-12+ hours after that decision — indicating bed unavailability rather than 
+12+ hours after that decision - indicating bed unavailability rather than 
 A&E throughput problems. This is considered a serious harm indicator.
 
 **12-Hour Wait Rate**  
