@@ -6,11 +6,20 @@ from sqlalchemy import create_engine
 import urllib
 import os
 
-# -------------------------------------------------------
-# NHS A&E Performance Analysis
-# Pulls data from SQL Server and produces charts for
-# documentation and GitHub README
-# -------------------------------------------------------
+"""
+================================================================
+Project : NHS A&E Performance Analysis (2023-25)
+File    : load_data.py
+Author  : Vinay Reddy Thudi
+Date    : May 2026
+
+Purpose : Loads 8 quarterly NHS England A&E XLS files into
+          SQL Server. Auto-detects header rows, standardises
+          column names, and handles file format variations.
+
+Output  : dbo.ae_raw (SQL Server - nhs_ae_analysis)
+================================================================
+"""
 
 OUTPUT_FOLDER = r"C:\Users\zainv\OneDrive\Desktop\NHS Datasets\nhs-ae-performance-analysis\python\charts"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
