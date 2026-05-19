@@ -1,8 +1,17 @@
--- ============================================================
--- Query 4: 12-Hour DTA Wait Hotspots with Window Functions
--- Business question: Which Trusts have the most dangerous
--- post-admission wait times, and is it getting worse?
--- ============================================================
+/*
+================================================================
+NHS A&E Performance Analysis
+04_12hr_dta_hotspots.sql
+Vinay Reddy Thudi | May 2026
+
+12-hour DTA waits are a patient safety indicator - these are
+people a doctor has decided need a bed but are still stuck in
+A&E because no bed is available. This query finds the worst
+offenders and checks whether things are getting better or worse.
+
+Data: dbo.ae_unified | nhs_ae_analysis
+================================================================
+*/
 
 WITH quarterly_dta AS (
     SELECT

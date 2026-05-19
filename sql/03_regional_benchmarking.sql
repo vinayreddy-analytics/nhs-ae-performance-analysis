@@ -1,9 +1,16 @@
--- ============================================================
--- Query 3: Regional Benchmarking with Window Functions
--- Business question: Which NHS regions have the most 
--- systemic pressure, and how does each Trust compare
--- to its regional peers?
--- ============================================================
+/*
+================================================================
+NHS A&E Performance Analysis
+03_regional_benchmarking.sql
+Vinay Reddy Thudi | May 2026
+
+How does each Trust compare to others in its own region?
+PARTITION BY region means the rank resets for each region
+so you can see the worst Trust in London vs worst in Midlands.
+
+Data: dbo.ae_unified | nhs_ae_analysis
+================================================================
+*/
 
 WITH trust_summary AS (
     SELECT

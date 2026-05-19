@@ -1,8 +1,17 @@
--- ============================================================
--- Query 1: Trust Performance Ranking by 4-Hour Standard
--- Business question: Which Trusts are consistently failing
--- the 95% target, and by how much?
--- ============================================================
+/*
+================================================================
+NHS A&E Performance Analysis
+01_trust_performance_ranking.sql
+Vinay Reddy Thudi | May 2026
+
+Which Trusts are consistently failing the 95% four-hour target?
+Using an average across all available quarters rather than a
+single quarter - one bad quarter could be seasonal, eight bad
+quarters is a structural problem.
+
+Data: dbo.ae_unified | nhs_ae_analysis
+================================================================
+*/
 
 WITH trust_performance AS (
     SELECT

@@ -1,8 +1,16 @@
--- ============================================================
--- Query 2: Quarterly Trend Analysis
--- Business question: Is A&E performance getting better or
--- worse over time, and which quarter was most severe?
--- ============================================================
+/*
+================================================================
+NHS A&E Performance Analysis
+02_quarterly_trend_analysis.sql
+Vinay Reddy Thudi | May 2026
+
+Is performance getting better or worse over time?
+LAG() gives us the previous quarter to calculate change.
+The seasonal dip in Q3 every year shows up clearly here.
+
+Data: dbo.ae_unified | nhs_ae_analysis
+================================================================
+*/
 
 WITH quarterly_national AS (
     SELECT

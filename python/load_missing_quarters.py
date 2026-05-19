@@ -4,7 +4,7 @@ import urllib
 
 # -------------------------------------------------------
 # Load Q3 and Q4 2024-25 from monthly CSVs
-# Since the quarterly XLS files are corrupted, we use the
+# Since the quarterly XLS files are corrupted, I used
 # individual monthly CSVs and aggregate them to quarter level
 # -------------------------------------------------------
 
@@ -20,7 +20,7 @@ engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
 
 # Q3 2024-25 = October, November, December 2024
 # Q4 2024-25 = January, February, March 2025
-# Update these filenames to match exactly what you downloaded
+
 quarter_files = {
     "Q3 2024-25": [
         "Monthly-AE-October-2024.csv",

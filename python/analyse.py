@@ -6,20 +6,8 @@ from sqlalchemy import create_engine
 import urllib
 import os
 
-"""
-================================================================
-Project : NHS A&E Performance Analysis (2023-25)
-File    : load_data.py
-Author  : Vinay Reddy Thudi
-Date    : May 2026
-
-Purpose : Loads 8 quarterly NHS England A&E XLS files into
-          SQL Server. Auto-detects header rows, standardises
-          column names, and handles file format variations.
-
-Output  : dbo.ae_raw (SQL Server - nhs_ae_analysis)
-================================================================
-"""
+# pulls from the same ae_unified table as Power BI
+# so the numbers should match exactly
 
 OUTPUT_FOLDER = r"C:\Users\zainv\OneDrive\Desktop\NHS Datasets\nhs-ae-performance-analysis\python\charts"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -32,15 +20,8 @@ params = urllib.parse.quote_plus(
 )
 engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
 
-# -------------------------------------------------------
-# Pull unified data from SQL
-# -------------------------------------------------------
 df = pd.read_sql("SELECT * FROM dbo.ae_unified", engine)
 
-print(f"Rows loaded: {len(df)}")
-print(f"Columns: {list(df.columns)}")
-
-# Convert numeric columns - must happen before any calculations
 numeric_cols = [
     "type1_attendances", "type1_over_4hr", "type1_within_4hr",
     "type2_attendances", "type3_attendances", "total_attendances",
@@ -51,33 +32,13 @@ for col in numeric_cols:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
-print("Numeric conversion complete.")
-
-# -------------------------------------------------------
-# Calculate 4hr performance where not already present
-# -------------------------------------------------------
 t1 = pd.to_numeric(df["type1_attendances"], errors="coerce")
 t1_over = pd.to_numeric(df["type1_over_4hr"], errors="coerce")
-
-print(f"t1 dtype: {t1.dtype}")
-print(f"t1_over dtype: {t1_over.dtype}")
-print(f"t1 sample: {t1.head()}")
-print(f"t1_over sample: {t1_over.head()}")
-
-diff = t1 - t1_over
-print(f"diff dtype: {diff.dtype}")
-print(f"diff sample: {diff.head()}")
-
-result = diff / t1.replace(0, float('nan')) * 100
+result = (t1 - t1_over) / t1.replace(0, float("nan")) * 100
 result = pd.to_numeric(result, errors="coerce")
-print(f"result dtype: {result.dtype}")
-
 df["pct_within_4hr_calc"] = result.round(1)
 df["performance"] = df["pct_within_4hr_calc"]
 
-# -------------------------------------------------------
-# Sort order for quarters
-# -------------------------------------------------------
 quarter_order = {
     ("2023-24", "Q1"): 1,
     ("2023-24", "Q2"): 2,
@@ -94,9 +55,6 @@ df["sort_order"] = df.apply(
     axis=1
 )
 
-df["quarter_display"] = df["financial_year"] + " " + df["quarter_label"]
-
-# Clean display labels
 label_map = {
     "2023-24 Q1": "Q1\n2023-24",
     "2023-24 Q2": "Q2\n2023-24",
@@ -107,22 +65,30 @@ label_map = {
     "2024-25 Q3 2024-25": "Q3\n2024-25",
     "2024-25 Q4 2024-25": "Q4\n2024-25",
 }
-df["quarter_display"] = df["quarter_display"].map(label_map)
+df["quarter_display"] = (df["financial_year"] + " " + df["quarter_label"]).map(label_map)
 
 # -------------------------------------------------------
-# Chart 1: National 4hr performance trend over 8 quarters
+# Chart 1: National 4hr performance trend
 # -------------------------------------------------------
-print("\nBuilding Chart 1 - National trend...")
+print("Building Chart 1 - National trend...")
 
 quarterly = (
-    df[df["type1_attendances"] > 0]
+    df[
+        (df["type1_attendances"] > 0) &
+        (df["type1_over_4hr"].notna()) &
+        (df["sort_order"] != 99)
+    ]
     .groupby(["sort_order", "quarter_display"])
-    .apply(lambda g: pd.Series({
-        "national_pct": (
-            (g["type1_attendances"] - g["type1_over_4hr"]).sum()
-            / g["type1_attendances"].sum() * 100
-        ).round(1)
-    }))
+    .apply(
+        lambda g: pd.Series({
+            "national_pct": round(
+                (g["type1_attendances"] - g["type1_over_4hr"]).sum()
+                / g["type1_attendances"].sum() * 100,
+                1
+            )
+        }),
+        include_groups=False
+    )
     .reset_index()
     .sort_values("sort_order")
     .dropna()
@@ -140,11 +106,11 @@ ax.plot(
     label="National 4hr performance"
 )
 
-# 95% target line
-ax.axhline(y=95, color="#DA291C", linewidth=1.5,
-           linestyle="--", label="95% NHS Standard")
+ax.axhline(
+    y=95, color="#DA291C", linewidth=1.5,
+    linestyle="--", label="95% NHS Standard"
+)
 
-# Shade the gap
 ax.fill_between(
     quarterly["quarter_display"],
     quarterly["national_pct"],
@@ -184,47 +150,73 @@ plt.close()
 print("  Saved: 01_national_trend.png")
 
 # -------------------------------------------------------
-# Chart 2: Regional average performance comparison
+# Chart 2: Regional performance - deduplicated and clean
 # -------------------------------------------------------
 print("Building Chart 2 - Regional comparison...")
 
-# Standardise region names - quarterly and monthly CSVs store them differently
-df["region_clean"] = (
-    df["region"]
+# filter to one row per Trust per quarter - monthly and quarterly
+# overlap for Q1-Q2 2024-25 so we only use quarterly XLS for those
+
+regional_df = df[
+    (df["type1_attendances"] > 0) &
+    (df["type1_over_4hr"].notna()) &
+    (df["is_primary_source"] == 1) &
+    (df["region"].notna()) &
+    (~df["region"].str.upper().str.contains("TOTAL", na=False))
+].copy()
+
+# Clean region names to match Power BI
+regional_df["region_clean"] = (
+    regional_df["region"]
     .str.strip()
-    .str.upper()
-    .str.replace("NHS ENGLAND ", "", regex=False)
-    .str.replace("NHS ", "", regex=False)
-    .str.title()
-    .str.strip()
+    .str.replace(r"\s+", " ", regex=True)
 )
 
+# some rows have region variants like "NHS ENGLAND MIDLANDS" in caps
+# from the monthly CSV - just use the 7 clean names from the quarterly files
+
+valid_regions = [
+    "NHS England East Of England",
+    "NHS England London",
+    "NHS England Midlands",
+    "NHS England North East And Yorkshire",
+    "NHS England North West",
+    "NHS England South East",
+    "NHS England South West",
+]
+
+regional_df = regional_df[regional_df["region_clean"].isin(valid_regions)]
+
 regional = (
-    df[
-        (df["type1_attendances"] > 0) &
-        (df["type1_over_4hr"].notna()) &
-        (df["region_clean"].notna()) &
-        (~df["region_clean"].isin(["Total", "Nan", ""]))
-    ]
+    regional_df
     .groupby("region_clean")
-    .apply(lambda g: pd.Series({
-        "avg_pct": (
-            (g["type1_attendances"] - g["type1_over_4hr"]).sum()
-            / g["type1_attendances"].sum() * 100
-        ).round(1)
-    }))
+    .apply(
+        lambda g: pd.Series({
+            "avg_pct": round(
+                (g["type1_attendances"] - g["type1_over_4hr"]).sum()
+                / g["type1_attendances"].sum() * 100,
+                1
+            )
+        }),
+        include_groups=False
+    )
     .reset_index()
     .sort_values("avg_pct", ascending=True)
     .dropna()
 )
 
-# Shorten region labels
-regional["region_short"] = regional["region_clean"]
+regional["region_short"] = (
+    regional["region_clean"]
+    .str.replace("NHS England ", "", regex=False)
+    .str.strip()
+)
 
 fig, ax = plt.subplots(figsize=(11, 6))
 
-colors = ["#DA291C" if v < 60 else "#FFB81C" if v < 65 else "#009639"
-          for v in regional["avg_pct"]]
+colors = [
+    "#DA291C" if v < 58 else "#FFB81C" if v < 62 else "#009639"
+    for v in regional["avg_pct"]
+]
 
 bars = ax.barh(
     regional["region_short"],
@@ -234,12 +226,15 @@ bars = ax.barh(
     height=0.6
 )
 
-ax.axvline(x=95, color="#DA291C", linewidth=1.5,
-           linestyle="--", label="95% NHS Standard", zorder=5)
+ax.axvline(
+    x=95, color="#DA291C", linewidth=1.5,
+    linestyle="--", label="95% NHS Standard", zorder=5
+)
 
 for bar, val in zip(bars, regional["avg_pct"]):
     ax.text(
-        val + 0.3, bar.get_y() + bar.get_height() / 2,
+        val + 0.3,
+        bar.get_y() + bar.get_height() / 2,
         f"{val:.1f}%",
         va="center", ha="left", fontsize=10
     )
@@ -262,20 +257,22 @@ plt.close()
 print("  Saved: 02_regional_comparison.png")
 
 # -------------------------------------------------------
-# Chart 3: 12-hour DTA waits trend - national total
+# sticking to quarterly XLS here so all 6 bars represent the same
+# data collection method - mixing in monthly CSV would distort the trend
 # -------------------------------------------------------
 print("Building Chart 3 - 12hr DTA trend...")
 
 dta_trend = (
-    df[df["dta_12hr_plus"].notna()]
+    df[
+        (df["dta_12hr_plus"].notna()) &
+        (df["data_source"] == "quarterly_xls")
+    ]
     .groupby(["sort_order", "quarter_display"])
     .agg(total_12hr=("dta_12hr_plus", "sum"))
     .reset_index()
     .sort_values("sort_order")
+    .dropna()
 )
-
-# Only use first 6 quarters (quarterly XLS - comparable data)
-dta_trend = dta_trend[dta_trend["sort_order"] <= 6]
 
 fig, ax = plt.subplots(figsize=(12, 6))
 
@@ -292,7 +289,8 @@ for _, row in dta_trend.iterrows():
         row["quarter_display"],
         row["total_12hr"] + 1000,
         f"{int(row['total_12hr']):,}",
-        ha="center", va="bottom", fontsize=10, color="#005EB8"
+        ha="center", va="bottom",
+        fontsize=10, color="#005EB8"
     )
 
 ax.set_title(
@@ -314,4 +312,4 @@ plt.close()
 print("  Saved: 03_dta_12hr_trend.png")
 
 print("\nAll charts saved to:", OUTPUT_FOLDER)
-print("\nDone.")
+print("Done.")

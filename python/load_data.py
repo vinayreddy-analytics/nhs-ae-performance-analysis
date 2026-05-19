@@ -3,9 +3,6 @@ from sqlalchemy import create_engine
 import os
 import urllib
 
-# -------------------------------------------------------
-# NHS A&E Data Loader - Final Version
-# -------------------------------------------------------
 
 DATA_FOLDER = r"C:\Users\zainv\OneDrive\Desktop\NHS Datasets"
 
@@ -94,7 +91,7 @@ for filename in files:
     header_row = find_header_row(raw)
     print(f"  Header at row {header_row}, using engine: {eng}")
 
-    # Step 3 - re-read from header row
+    # Step 3 - re read from header row
     engines = ["openpyxl", "xlrd"] if filepath.endswith(".xlsx") else ["xlrd", "openpyxl"]
     df = None
     for e in engines:
@@ -136,7 +133,7 @@ if not all_quarters:
     print("\nNo data loaded.")
 else:
     # Align columns across all quarters before concat
-    # Some quarters may have slightly different columns - fill missing with NaN
+    # Some quarters might have slightly different columns - fill missing values with NaN
     all_cols = set()
     for df in all_quarters:
         all_cols.update(df.columns)
