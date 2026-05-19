@@ -12,11 +12,17 @@ NHS England data.
 
 ## Key abbrevation and its meaning
 A&E - Accident and Emergency. The hospital department where people go for urgent medical treatment. Also called an Emergency Department (ED).
+
 DTA - Decision To Admit. The moment a doctor decides a patient needs a hospital bed. The 12-hour DTA wait measures how long patients are stuck in A&E after that decision because no bed is available.
+
 ICB - Integrated Care Board. The regional NHS organisation responsible for planning and commissioning health services for a local area. Replaced Clinical Commissioning Groups (CCGs) in 2022.
+
 RAG - Red, Amber, Green. A traffic light system used in NHS reporting to show whether performance is on track (Green), at risk (Amber) or failing (Red).
+
 MSitAE - Monthly Situation Report for A&E. The official name of the NHS England data collection that your dataset comes from.
+
 SDCS - Strategic Data Collection Service. The NHS system used by Trusts to submit performance data to NHS England.
+
 OGL - Open Government Licence. The licence under which NHS England publishes its open data, allowing free use with attribution.
 
 

@@ -26,16 +26,16 @@ Primary analytical table combining quarterly XLS and monthly CSV source data.
 | total_attendances | BIGINT | Sum of all A&E attendance types |
 | type1_within_4hr | BIGINT | Type 1 patients discharged, admitted or transferred within 4 hours |
 | type1_over_4hr | BIGINT | Type 1 patients who waited more than 4 hours |
-| total_within_4hr | BIGINT | All types combined — patients seen within 4 hours |
-| total_over_4hr | BIGINT | All types combined — patients waiting over 4 hours |
+| total_within_4hr | BIGINT | All types combined - patients seen within 4 hours |
+| total_over_4hr | BIGINT | All types combined - patients waiting over 4 hours |
 | pct_within_4hr_type1 | FLOAT | Pre-calculated % of Type 1 patients within 4 hours (from source) |
 | pct_within_4hr_all | FLOAT | Pre-calculated % of all types within 4 hours (from source) |
 | dta_4to12hr | BIGINT | Patients waiting 4-12 hours from Decision To Admit to receiving a bed |
-| dta_12hr_plus | BIGINT | Patients waiting 12+ hours from Decision To Admit — key patient safety indicator |
+| dta_12hr_plus | BIGINT | Patients waiting 12+ hours from Decision To Admit - key patient safety indicator |
 | emergency_admissions_type1 | BIGINT | Emergency admissions via Type 1 A&E department |
 | total_emergency_admissions | BIGINT | All emergency admissions including non-A&E routes |
 | data_source | VARCHAR | Source file type: quarterly_xls or monthly_csv |
-| is_primary_source | INT | 1 = use this row for Trust-level analysis (avoids double-counting), 0 = exclude |
+| is_primary_source | INT | 1 = use this row for Trust-level analysis (avoids double counting), 0 = exclude |
 
 ---
 
